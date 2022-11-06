@@ -31,10 +31,16 @@ driver.get(url)
 wait = WebDriverWait(driver, 30)  # time in seconds to wait until timeout
 
 # # Step 02: Inputs Setup
+#####################################
+#CONFIGURE THIS BEFORE RUNNING SCRIPT
+#####################################
+
 
 username = 'penori.craiova@gmail.com'
 password = input('Enter password for account: ')
-backup_code = '4185 0442'
+backup_code = '4185 0442'  # not necessary
+channel_name = 'SOUNDSOLACE'  # will be used to detect duplicate comments
+
 
 search_phrase = 'rain sounds'  # what are we searching for?
 total_comments = 5  # how many comments should this bot leave?
@@ -151,13 +157,17 @@ def find_comment_section():
                 print('not quite at the comment section, scrolling down a little bit more...')
                 driver.execute_script('window.scrollBy(0, 100)')  # scroll down to comment section
                 sleep(0.5)
-
+    page_source_text = driver.execute_script('return document.body.innerHTML;')
+    if ('Comments are turned off' in page_source_text):
+        return False  # comment section found? NO, FALSE
+    else:
+        return True
 
 
 def duplicate_comments_found():  # returns true if duplicates found
     sleep(2)  # wait until the comments appear
     all_comments = driver.find_element(By.CSS_SELECTOR, '#comments').get_attribute('innerHTML')
-    own_comments_counter = all_comments.count('SOUNDSOLACE')  # apare de două ori când nu e niciun comment
+    own_comments_counter = all_comments.count(channel_name)  # apare de două ori când nu e niciun comment
     print('comment found: ', own_comments_counter)
 
     return own_comments_counter > 2
@@ -226,7 +236,10 @@ def post_comments(total_commentsl: int, comment: str):
                 print('found the title :), page is loaded')
 
                 sleep(2)  # wait a bit until the page fully loads
-                find_comment_section()
+                if(find_comment_section() == False):
+                    driver.execute_script('window.history.go(-1)')
+                    print("This video has comment section disabled, going back...")
+                    continue
 
 
                 if duplicate_comments_found():
@@ -243,9 +256,9 @@ def post_comments(total_commentsl: int, comment: str):
             print('there is no meta for views, we will continue with next video', 'exception was: ', e)
 
 
-# # Step 03: accept terms and rights
+# Step 03: accept terms and rights
 accept_conditions()
-# # Step 04: Sign in
+# Step 04: Sign in
 sign_in()
 # Step 05: Search
 # wait for search button to appear, you need to tap yes on phone before this...
@@ -256,14 +269,3 @@ post_comments(total_comments, comment)
 print('____________REACHED END OF PROGRAM')
 
 sleep(999999)
-
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
