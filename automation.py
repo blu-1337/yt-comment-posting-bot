@@ -118,14 +118,14 @@ def select_filters():
 
 
 def fetch_videos():
-    driver.execute_script(
-        'window.scrollTo(0, document.documentElement.scrollHeight)')
-    sleep(2)
-    driver.execute_script(
-        'window.scrollTo(0, document.documentElement.scrollHeight)')
-    sleep(2)
-    driver.execute_script(
-        'window.scrollTo(0, document.documentElement.scrollHeight)')
+    def fetching_loop(len):
+        while len > 0:
+            driver.execute_script(
+                'window.scrollTo(0, document.documentElement.scrollHeight)')
+            sleep(2)
+            len -= 1
+
+    fetching_loop(5)  # this defines how many times it scrolls down to fetch more videos
 
     wait.until(EC.visibility_of_any_elements_located((By.CSS_SELECTOR, 'ytd-video-renderer')))
     return driver.find_elements(By.CSS_SELECTOR, 'ytd-video-renderer')  # list all videos
@@ -172,6 +172,13 @@ def duplicate_comments_found():  # returns true if duplicates found
 
     return own_comments_counter > 2
 
+def duplicate_comments_found_shorts():  # returns true if duplicates found
+    sleep(2)  # wait until the comments appear
+    all_comments = driver.find_element(By.CSS_SELECTOR, 'body').get_attribute('innerHTML')
+    own_comments_counter = all_comments.count(channel_name)  # apare de două ori când nu e niciun comment
+    print('comment found: ', own_comments_counter)
+
+    return own_comments_counter > 2
 
 def write_comment():
     # add comment
@@ -201,6 +208,34 @@ def write_comment():
     sleep(3)
     driver.execute_script('window.history.go(-1)')
 
+def write_comment_shorts():
+    driver.find_element(By.CSS_SELECTOR, '#comments-button > ytd-button-renderer > yt-button-shape > label > button > yt-touch-feedback-shape > div > div.yt-spec-touch-feedback-shape__fill').click()
+    wait.until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, '#placeholder-area')))
+    driver.find_element(By.CSS_SELECTOR, '#placeholder-area').click()
+    #     sleep(2)
+    #     driver.find_element(By.CSS_SELECTOR, '#contenteditable-root').send_keys('word out')
+
+    pyperclip.copy(comment)
+    sleep(1)
+    ActionChains(driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+
+    print('pasted comment, now waiting 1 second...')
+
+    sleep(1)
+    comment_box_submit = driver.find_element(By.XPATH, '/html/body/ytd-app/ytd-popup-container/tp-yt-paper-dialog/ytd-engagement-panel-section-list-renderer/div[2]/ytd-section-list-renderer/div[2]/ytd-comments/ytd-item-section-renderer/div[1]/ytd-comments-header-renderer/div[5]/ytd-comment-simplebox-renderer/div[3]/ytd-comment-dialog-renderer/ytd-commentbox/div[2]/div/div[4]/div[5]/ytd-button-renderer[2]')
+    comment_box_submit.click()
+    print('finished writing to textbox, now going back one page after 3 seconds...')
+    sleep(3)
+
+    print('goiing back, back, to cali, cali')
+    driver.execute_script('window.history.go(-1)')
+
+def it_is_a_yt_shorts():
+    if 'shorts' in driver.current_url:
+        return True
+    else:
+        return False
+
 def post_comments(total_commentsl: int, comment: str):
     videos = fetch_videos()
 
@@ -225,7 +260,7 @@ def post_comments(total_commentsl: int, comment: str):
 
                 print('clicking on video...')
                 video.find_element(By.CSS_SELECTOR,
-                                   ' #video-title > yt-formatted-string').click()  # clicks on video title
+                                   '#video-title > yt-formatted-string').click()  # clicks on video title
                 print('___clicked video')
 
                 # scroll down to comment section
@@ -236,20 +271,31 @@ def post_comments(total_commentsl: int, comment: str):
                 print('found the title :), page is loaded')
 
                 sleep(2)  # wait a bit until the page fully loads
-                if(find_comment_section() == False):
-                    driver.execute_script('window.history.go(-1)')
-                    print("This video has comment section disabled, going back...")
-                    continue
 
-
-                if duplicate_comments_found():
-                    driver.execute_script('window.history.go(-1)')
-                    print("This video already has a comment on it! Going back...")
-                    continue
+                # check if it is a shorts video or not
+                if it_is_a_yt_shorts():
+                    if duplicate_comments_found_shorts():
+                        driver.execute_script('window.history.go(-1)')
+                        print("This video already has a comment on it! Going back...")
+                        continue
+                    else:
+                        write_comment_shorts()
+                        comments_counter += 1
                 else:
-                    # do main shit
-                    write_comment()
-                    comments_counter += 1
+                    if(find_comment_section() == False):
+                        driver.execute_script('window.history.go(-1)')
+                        print("This video has comment section disabled, going back...")
+                        continue
+
+
+                    if duplicate_comments_found():
+                        driver.execute_script('window.history.go(-1)')
+                        print("This video already has a comment on it! Going back...")
+                        continue
+                    else:
+                        # do main shit
+                        write_comment()
+                        comments_counter += 1
             else:
                 print("this is not a video, it's a live or something else")
         except Exception as e:
