@@ -105,6 +105,7 @@ def search_youtube():
     search_field.send_keys(Keys.RETURN)
 
 
+
 def select_filters():
     # click on filters
     filters = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR,
@@ -115,6 +116,10 @@ def select_filters():
     this_week = wait.until(EC.visibility_of_element_located((By.XPATH,
                                                              '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/ytd-two-column-search-results-renderer/div[2]/div/ytd-section-list-renderer/div[1]/div[2]/ytd-search-sub-menu-renderer/div[1]/iron-collapse/div/ytd-search-filter-group-renderer[1]/ytd-search-filter-renderer[3]/a/div/yt-formatted-string')))
     this_week.click()
+
+    # get the current url
+    return driver.current_url  # returns the current search url
+    print(search_page)
 
 
 def fetch_videos():
@@ -208,29 +213,29 @@ def write_comment():
     sleep(3)
     driver.execute_script('window.history.go(-1)')
 
-def write_comment_shorts():
-    driver.find_element(By.CSS_SELECTOR, '#comments-button > ytd-button-renderer > yt-button-shape > label > button > yt-touch-feedback-shape > div > div.yt-spec-touch-feedback-shape__fill').click()
-    wait.until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, '#placeholder-area')))
-    driver.find_element(By.CSS_SELECTOR, '#placeholder-area').click()
-    #     sleep(2)
-    #     driver.find_element(By.CSS_SELECTOR, '#contenteditable-root').send_keys('word out')
+# def write_comment_shorts():
+#     driver.find_element(By.CSS_SELECTOR, '#comments-button > ytd-button-renderer > yt-button-shape > label > button > yt-touch-feedback-shape > div > div.yt-spec-touch-feedback-shape__fill').click()
+#     wait.until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, '#placeholder-area')))
+#     driver.find_element(By.CSS_SELECTOR, '#placeholder-area').click()
+#     #     sleep(2)
+#     #     driver.find_element(By.CSS_SELECTOR, '#contenteditable-root').send_keys('word out')
+#
+#     pyperclip.copy(comment)
+#     sleep(1)
+#     ActionChains(driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+#
+#     print('pasted comment, now waiting 1 second...')
+#
+#     sleep(1)
+#     comment_box_submit = driver.find_element(By.XPATH, '/html/body/ytd-app/ytd-popup-container/tp-yt-paper-dialog/ytd-engagement-panel-section-list-renderer/div[2]/ytd-section-list-renderer/div[2]/ytd-comments/ytd-item-section-renderer/div[1]/ytd-comments-header-renderer/div[5]/ytd-comment-simplebox-renderer/div[3]/ytd-comment-dialog-renderer/ytd-commentbox/div[2]/div/div[4]/div[5]/ytd-button-renderer[2]')
+#     comment_box_submit.click()
+#     print('finished writing to textbox, now going back one page after 3 seconds...')
+#     sleep(3)
+#
+#     print('goiing back, back, to cali, cali')
+#     driver.execute_script('window.history.go(-1)')
 
-    pyperclip.copy(comment)
-    sleep(1)
-    ActionChains(driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-
-    print('pasted comment, now waiting 1 second...')
-
-    sleep(1)
-    comment_box_submit = driver.find_element(By.XPATH, '/html/body/ytd-app/ytd-popup-container/tp-yt-paper-dialog/ytd-engagement-panel-section-list-renderer/div[2]/ytd-section-list-renderer/div[2]/ytd-comments/ytd-item-section-renderer/div[1]/ytd-comments-header-renderer/div[5]/ytd-comment-simplebox-renderer/div[3]/ytd-comment-dialog-renderer/ytd-commentbox/div[2]/div/div[4]/div[5]/ytd-button-renderer[2]')
-    comment_box_submit.click()
-    print('finished writing to textbox, now going back one page after 3 seconds...')
-    sleep(3)
-
-    print('goiing back, back, to cali, cali')
-    driver.execute_script('window.history.go(-1)')
-
-def it_is_a_yt_shorts():
+def is_a_yt_shorts():
     if 'shorts' in driver.current_url:
         return True
     else:
@@ -253,14 +258,20 @@ def post_comments(total_commentsl: int, comment: str):
             video_views = video.find_element(By.CSS_SELECTOR, '#metadata-line > span:nth-child(2)').get_attribute(
                 'innerHTML')
             print(video_views)
-
+        except Exception as e:
+            print('there is no meta for views, we will continue with next video', 'exception was: ', e)
+            driver.get(search_page)
+            print('going back one page after getting this error...')
+            continue
+        else:  # this gets executed if the try is successful
             if 'views' in video_views:  # check if the word is in there, 1K views denotes a video, all else is a live or playlist
                 # go to video and do shit
                 print('video also contains views, nicee, proceding to leave a comment')
 
                 print('clicking on video...')
-                video.find_element(By.CSS_SELECTOR,
-                                   '#video-title > yt-formatted-string').click()  # clicks on video title
+                button = video.find_element(By.CSS_SELECTOR,
+                                   '#meta') # clicks on video title
+                driver.execute_script("arguments[0].click();", button)
                 print('___clicked video')
 
                 # scroll down to comment section
@@ -273,33 +284,28 @@ def post_comments(total_commentsl: int, comment: str):
                 sleep(2)  # wait a bit until the page fully loads
 
                 # check if it is a shorts video or not
-                if it_is_a_yt_shorts():
-                    if duplicate_comments_found_shorts():
+                if is_a_yt_shorts():
                         driver.execute_script('window.history.go(-1)')
-                        print("This video already has a comment on it! Going back...")
+                        print("This video already is a YT shorts, skipping it...")
                         continue
-                    else:
-                        write_comment_shorts()
-                        comments_counter += 1
+
+                if(find_comment_section() == False):
+                    driver.execute_script('window.history.go(-1)')
+                    print("This video has comment section disabled, going back...")
+                    continue
+
+
+                if duplicate_comments_found():
+                    driver.execute_script('window.history.go(-1)')
+                    print("This video already has a comment on it! Going back...")
+                    continue
                 else:
-                    if(find_comment_section() == False):
-                        driver.execute_script('window.history.go(-1)')
-                        print("This video has comment section disabled, going back...")
-                        continue
-
-
-                    if duplicate_comments_found():
-                        driver.execute_script('window.history.go(-1)')
-                        print("This video already has a comment on it! Going back...")
-                        continue
-                    else:
-                        # do main shit
-                        write_comment()
-                        comments_counter += 1
+                    # do main shit
+                    write_comment()
+                    comments_counter += 1
             else:
                 print("this is not a video, it's a live or something else")
-        except Exception as e:
-            print('there is no meta for views, we will continue with next video', 'exception was: ', e)
+
 
 
 # Step 03: accept terms and rights
@@ -309,7 +315,7 @@ sign_in()
 # Step 05: Search
 # wait for search button to appear, you need to tap yes on phone before this...
 search_youtube()
-select_filters()
+search_page = select_filters()
 post_comments(total_comments, comment)
 
 print('____________REACHED END OF PROGRAM')
