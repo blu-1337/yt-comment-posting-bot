@@ -15,6 +15,20 @@ from time import sleep
 import pyperclip
 import random
 
+
+
+def read_password_file(filepath):
+    """
+    Read and return the user/password file.
+    """
+    try:
+        with open(filepath, 'r') as fd:
+            lines = fd.readlines()
+            fd.close()
+            return lines
+    except IOError:
+        raise ValueError("Can't open password file for reading.")
+
 # from submodules.password_hashing import say_hi
 
 
@@ -36,8 +50,9 @@ wait = WebDriverWait(driver, 30)  # time in seconds to wait until timeout
 #####################################
 
 
+
 username = 'penori.craiova@gmail.com'
-password = input('Enter password for account: ')
+password = read_password_file('./.pass')
 backup_code = '4185 0442'  # not necessary
 channel_name = 'SOUNDSOLACE'  # will be used to detect duplicate comments
 
