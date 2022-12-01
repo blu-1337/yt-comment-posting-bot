@@ -1,3 +1,4 @@
 @echo on
 e:
-python e:\projects\yt-comment-posting-bot\automation.py
+cd e:\projects\yt-comment-posting-bot\
+python automation.py
