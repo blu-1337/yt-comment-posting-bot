@@ -2,7 +2,6 @@
 # coding: utf-8
 
 from selenium import webdriver
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,7 +16,9 @@ import pyperclip
 import random
 import requests
 from random import randint
-
+import os       
+from urllib.parse import urlparse, parse_qs
+from contextlib import suppress
 
 
 def read_password_file(filepath):
@@ -61,7 +62,7 @@ channel_name = '@soundsolace'  # will be used to detect duplicate comments
 
 
 search_phrase = 'rain sounds'  # what are we searching for?
-total_comments = 20  # how many comments should this bot leave?
+total_comments = 40  # how many comments should this bot leave?
 
 comment_array = ["Just for anyone that needed to see this: everything will be ok ❤️🥺",
                  "✨💕I'm sending out positive vibes to everyone here. 😘❣💕Have a nice day  🙏 ✨",
@@ -104,7 +105,7 @@ def accept_conditions():
                                                    '//span[text()="Accept all"]')
     if accept_all_conditions_01:
         accept_all_conditions_01.click()
-    sleep(2)
+    sleep(2)    
 
 
 def sign_in():
@@ -113,7 +114,7 @@ def sign_in():
 
     next_button = driver.find_element(By.XPATH, '//span[text()="Next"]')
     next_button.click()
-
+    
 
     password_input_field = wait.until(EC.visibility_of_element_located((By.XPATH, '//input[@type="password"]')))
     password_input_field.send_keys(password)
@@ -123,7 +124,24 @@ def sign_in():
     next_button = driver.find_element(By.XPATH, '//span[text()="Next"]')
     next_button.click()
 
+    # enter_backup_code_button = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div.pQ0lne > ul > li:nth-child(5)')))
+    # enter_backup_code_button.click()
+    #
+    # backup_code_input_field = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backupCodePin')))
+    # backup_code_input_field.send_keys(backup_code)
+    # backup_code_input_field.send_keys(Keys.RETURN)
+
+#     while True:
+#         x = input('write ok if you are done and ready to go and you are on the youtube page: ')
+#         if x == 'ok':
+#             break
+
+    # accept_all_conditions_02 = driver.find_element(By.XPATH, '//*[@id="button"]')
+    # if accept_all_conditions_02:
+    #     accept_all_conditions_02.click()
+
     sleep(7)
+
 
 def search_youtube():
     url = 'https://www.youtube.com/'
@@ -139,7 +157,7 @@ def search_youtube():
 
     # search_field.click()
     search_field.send_keys(Keys.RETURN)
-
+    
 
 
 def select_filters():
@@ -151,11 +169,11 @@ def select_filters():
 #     this_week = wait.until(EC.visibility_of_element_located((By.XPATH,
 #                                                              '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/ytd-two-column-search-results-renderer/div[2]/div/ytd-section-list-renderer/div[1]/div[2]/ytd-search-sub-menu-renderer/div[1]/iron-collapse/div/ytd-search-filter-group-renderer[1]/ytd-search-filter-renderer[3]/a/div/yt-formatted-string')))
 #     this_week.click()
-
+    
     today = wait.until(EC.visibility_of_element_located((By.XPATH,
                                                              '//yt-formatted-string[text()="Today"]')))
     today.click()
-
+    
     # get the current url
     return driver.current_url  # returns the current search url
     print(search_page)
@@ -183,7 +201,7 @@ def find_comment_section():
     print('should of went down now a bit')
 
     comments_found = False
-
+    
     sleep(3)
 
     try:
@@ -247,13 +265,57 @@ def write_comment():
     sleep(3)
 
 
-def is_a_yt_shorts():
-    if 'shorts' in driver.current_url:
+def is_a_yt_shorts(url):
+    if 'shorts' in url:
         return True
     else:
         return False
+    
+def is_video_in_file(video_link):
+    with open('./visited_links.txt', 'r') as file:
+        # read all content of a file
+        content = file.read()
+        # check if string present in a file
+        if video_link in content:
+            return True
+        else:
+            return False
 
 
+# noinspection PyTypeChecker
+def get_yt_id(url, ignore_playlist=False):  # this returns just the id of the video, no www's
+    # Examples:
+    # - http://youtu.be/SA2iWivDJiE
+    # - http://www.youtube.com/watch?v=_oPAwA_Udwc&feature=feedu
+    # - http://www.youtube.com/embed/SA2iWivDJiE
+    # - http://www.youtube.com/v/SA2iWivDJiE?version=3&amp;hl=en_US
+    query = urlparse(url)
+    if query.hostname == 'youtu.be': return query.path[1:]
+    if query.hostname in {'www.youtube.com', 'youtube.com', 'music.youtube.com'}:
+        if not ignore_playlist:
+        # use case: get playlist id not current video in playlist
+            with suppress(KeyError):
+                return parse_qs(query.query)['list'][0]
+        if query.path == '/watch': return parse_qs(query.query)['v'][0]
+        if query.path[:7] == '/watch/': return query.path.split('/')[1]
+        if query.path[:7] == '/embed/': return query.path.split('/')[2]
+        if query.path[:3] == '/v/': return query.path.split('/')[2]
+   # returns None for invalid YouTube url
+
+
+        
+
+
+def file_too_large_updater(visited_links_path):
+    if os.path.getsize(visited_links_path) > (10 * 1024 * 1024):  # bigger than 10MB, dimension is given in Bytes
+        os.remove(visited_links_path)
+        with open(visited_links_path, 'w') as f:  # this makes a new file
+            f.write('Create a new text file!')
+        print("anewtextfilewascreated")
+    else:
+        print('nothing happened with file too large updater')
+
+        
 def post_comments(total_commentsl: int, comment: str, loop_length: int):
     videos = fetch_videos(loop_length)
 
@@ -276,11 +338,13 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
 
         try:
             video_views = videos[i].find_element(By.CSS_SELECTOR,'#metadata-line > span').get_attribute("innerHTML")
-            print(video_views)
+            print(video_views) 
         except Exception as e:
             print(vid_counter, "____we are on that video number")
             print('there is no meta for views, we will continue with next video', 'exception was: ', e)
-            # driver.get(search_page)
+            driver.get(search_page)
+            fetch_videos(loop_length)  # FETCH VIDEOS AGAIN
+            sleep(5)
             print('going back one page after getting this error...')
             continue
         else:  # this gets executed if the try is successful
@@ -290,15 +354,34 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
                 print('video also contains views, nicee, proceding to leave a comment')
 
                 print('clicking on video...')
-
-
-
+                
+                
+                
+                
                 main_video_list_window = driver.current_window_handle
-                cookie = videos[i].find_element(By.CSS_SELECTOR, '#video-title')
-                cookie_link = cookie.get_attribute('href')
-                print('link for video is:', cookie_link)
+                video = videos[i].find_element(By.CSS_SELECTOR, '#video-title')
+                video_link = video.get_attribute('href')
+                print('link for video is:', video_link)
+                
+                if is_a_yt_shorts(video_link):
+                    print("This video already is a YT shorts, skipping it with continue...")
+                    continue
+                print('this video is not a yt shorts')
+                video_id = get_yt_id(video_link)
 
+                if is_video_in_file(video_id):
+                    print('we already visited this video, lets continue with the next one')
+                    continue  # we already visited this vid, sorry
+                else:
+                    # write video to file
+                    print('video not visited, write to file')
+                    visited_links_path = './visited_links.txt'
+                    file_too_large_updater(visited_links_path)  # check if file got too large, to avoid filling up of memory
+                    with open(visited_links_path, 'a') as f:
+                        f.write(video_id + '\n')  # also puts a new line
+                        print("wrote video link to txt file")
 
+                        
                 driver.switch_to.new_window('tab')
                   #Now you can run this to open the gmailtag in a new tab
 #                 ActionChains(webdriver).key_down(Keys.CONTROL).click(cookie).perform()
@@ -306,7 +389,10 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
 #                 driver.execute_script(script_text)
                 # switch to new window with switch_to.window()
 #                 driver.switch_to.window(driver.window_handles[1])
-                driver.get(cookie_link)
+                driver.get(video_link)
+    
+                # here you write to the text file of visited links
+                # also check if the link has already been visited
 
 #                 execute_script('''window.open("http://bings.com","_blank");''')
 #                 button = video.find_element(By.CSS_SELECTOR,
@@ -321,16 +407,11 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
                 sleep(2)  # wait a bit until the page fully loads
 
                 # check if it is a shorts video or not
-                if is_a_yt_shorts():
-#                         driver.execute_script('window.history.go(-1)')
-                        driver.close()
-                        driver.switch_to.window(main_video_list_window)
-                        print("This video already is a YT shorts, skipping it...")
-                        continue
+
 
                 if(find_comment_section() == False):
 #                     driver.execute_script('window.history.go(-1)')
-                    driver.close()
+                    driver.close()   
                     driver.switch_to.window(main_video_list_window)
                     print("This video has comment section disabled, going back...")
                     continue
@@ -354,7 +435,7 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
                 print("this is not a video, it's a live or something else")
     if comments_counter != total_comments:
         print('comments counter is not reached, we are increasing loop length')
-        post_comments(total_comments, comment, loop_length + 5)
+        post_comments(total_comments - comments_counter, comment, loop_length + 5)  # we decrease the total comments count and increase the loop size
 
 
 # Step 03: accept terms and rights
