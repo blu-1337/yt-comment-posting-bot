@@ -61,7 +61,7 @@ password = read_password_file('./.pass')
 channel_name = '@soundsolace'  # will be used to detect duplicate comments
 
 
-search_phrase = 'rain sounds'  # what are we searching for?
+search_phrase = 'relaxing sounds'  # what are we searching for?
 total_comments = 40  # how many comments should this bot leave?
 
 comment_array = ["Just for anyone that needed to see this: everything will be ok ❤️🥺",
@@ -124,26 +124,10 @@ def sign_in():
     next_button = driver.find_element(By.XPATH, '//span[text()="Next"]')
     next_button.click()
 
-    # enter_backup_code_button = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div.pQ0lne > ul > li:nth-child(5)')))
-    # enter_backup_code_button.click()
-    #
-    # backup_code_input_field = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backupCodePin')))
-    # backup_code_input_field.send_keys(backup_code)
-    # backup_code_input_field.send_keys(Keys.RETURN)
-
-#     while True:
-#         x = input('write ok if you are done and ready to go and you are on the youtube page: ')
-#         if x == 'ok':
-#             break
-
-    # accept_all_conditions_02 = driver.find_element(By.XPATH, '//*[@id="button"]')
-    # if accept_all_conditions_02:
-    #     accept_all_conditions_02.click()
-
     sleep(7)
 
 
-def search_youtube():
+def search_youtube(search_phrase):
     url = 'https://www.youtube.com/'
     driver.get(url)
 
@@ -187,6 +171,9 @@ def fetch_videos(loop_length):
             sleep(2)
             loop_length -= 1
 
+    if "No more results" in driver.page_source:
+        print("end of search term reached, use another earch term")
+        return 
     fetching_loop(loop_length)  # this defines how many times it scrolls down to fetch more videos
 
     wait.until(EC.visibility_of_any_elements_located((By.CSS_SELECTOR, 'ytd-video-renderer')))
@@ -306,10 +293,10 @@ def get_yt_id(url, ignore_playlist=False):  # this returns just the id of the vi
         
 
 
-def file_too_large_updater(visited_links_path):
-    if os.path.getsize(visited_links_path) > (10 * 1024 * 1024):  # bigger than 10MB, dimension is given in Bytes
-        os.remove(visited_links_path)
-        with open(visited_links_path, 'w') as f:  # this makes a new file
+def file_too_large_updater(path):
+    if os.path.getsize(path) > (10 * 1024 * 1024):  # bigger than 10MB, dimension is given in Bytes
+        os.remove(path)
+        with open(path, 'w') as f:  # this makes a new file
             f.write('Create a new text file!')
         print("anewtextfilewascreated")
     else:
@@ -318,95 +305,115 @@ def file_too_large_updater(visited_links_path):
         
 def post_comments(total_commentsl: int, comment: str, loop_length: int):
     videos = fetch_videos(loop_length)
-
-#     print('fetched videos_______________0________________', videos[0].get_attribute('innerHTML'))
-#     print('fetched videos_______________1________________', videos[1].get_attribute('innerHTML'))
     comments_counter = 0
-    print(f'videos have length of {len(videos)}')
     vid_counter = 0
-#     for video in videos:
-    for i in range(0, len(videos)):
-        vid_counter += 1
-        if comments_counter == total_comments:
-            print(f'We reached {total_comments} comments. Stopping script. Goodbye!')
-            break
 
-        print(f'comments counter is {comments_counter}')
-        print(f'vid counter is: {vid_counter}')
-        print('videocacat________________________')
-#         print(videos[i].get_attribute('innerHTML'))
+    print(f'videos have length of {len(videos)}')
 
+
+
+            
+    # save all videos to text file, if they are not a yt shorts
+    for i in range(1, len(videos)+1): 
         try:
-            video_views = videos[i].find_element(By.CSS_SELECTOR,'#metadata-line > span').get_attribute("innerHTML")
+            video_views = videos[i-1].find_element(By.CSS_SELECTOR,'#metadata-line > span').get_attribute("innerHTML")
             print(video_views) 
         except Exception as e:
-            print(vid_counter, "____we are on that video number")
+            print("____we are not appending this video number", i)
             print('there is no meta for views, we will continue with next video', 'exception was: ', e)
-            driver.get(search_page)
-            fetch_videos(loop_length)  # FETCH VIDEOS AGAIN
-            sleep(5)
-            print('going back one page after getting this error...')
             continue
         else:  # this gets executed if the try is successful
             if 'views' in video_views:  # check if the word is in there, 1K views denotes a video, all else is a live or playlist
-                print('views' in video_views, "is some how true?????", video_views)
+                print('views' in video_views, "is true, the value is", video_views)
                 # go to video and do shit
-                print('video also contains views, nicee, proceding to leave a comment')
+                print('saving video to file...')
+                
+                
+                xpath_string = '(//a[@id="video-title"])[' + str(i) + ']'
+                href = videos[i-1].find_element(By.XPATH, xpath_string)
+                print(href.get_attribute('href'))
+                href = href.get_attribute('href')
+                with open('./fetched_videos.txt', 'a') as f:  # this overwrites file and starts it from scratch
+                    f.write(href + '\n')  # also puts a new line
+            else: 
+                print('word views not found, continuing to next file')
+                continue
+    print("wrote video links to visited_links.txt file")
 
-                print('clicking on video...')
+    # read contents of fetched videos and sanve them to variable        
+    with open("fetched_videos.txt", 'r+') as fp:  # r+ is for truncation
+        # read an store all lines into list
+        lines = fp.readlines()        
+#         f.truncate(0) # need '0' when using r+, 
+    open('fetched_videos.txt', 'w').close()  # this deletes the file contents
+
+    for line in lines:  # go through each line of fetched videos file
+        print(line)
+        line = line.replace(" ", "")
+        if line == "":
+            print('empty line')
+            continue
+        else:
+            print("not empty line")
+        if is_a_yt_shorts(line):
+            continue
+        else:
+            video_id = get_yt_id(line)
+            if is_video_in_file(video_id):
+                print("this video id was found in the visited_links.txt file, continuing...")
+                continue
+            else:  
+                if comments_counter == total_comments:
+                    print(f'We reached {total_comments} comments. Stopping script. Goodbye!')
+                    break
+                    
+                # writes link to file
+                visited_links_path = "./visited_links.txt"
+                with open(visited_links_path, 'a') as f:
+                    f.write(video_id)  # also puts a new line
+                    print("wrote video link to txt file")
+                file_too_large_updater(visited_links_path)  # check if file got too large, to avoid filling up of memory
+                # post comment here...
+                vid_counter += 1
+                print(f'comments counter is {comments_counter}')
+                print(f'vid counter is: {vid_counter}')
+                print('videocacat________________________')
                 
-                
-                
-                
+
+                print('going to video...')
+
+
+
+
                 main_video_list_window = driver.current_window_handle
-                video = videos[i].find_element(By.CSS_SELECTOR, '#video-title')
-                video_link = video.get_attribute('href')
+#                 video = videos[i].find_element(By.CSS_SELECTOR, '#video-title')
+                video_link = line
                 print('link for video is:', video_link)
-                
-                if is_a_yt_shorts(video_link):
-                    print("This video already is a YT shorts, skipping it with continue...")
-                    continue
-                print('this video is not a yt shorts')
-                video_id = get_yt_id(video_link)
 
-                if is_video_in_file(video_id):
-                    print('we already visited this video, lets continue with the next one')
-                    continue  # we already visited this vid, sorry
-                else:
+#                 if is_a_yt_shorts(video_link):
+#                     print("This video already is a YT shorts, skipping it with continue...")
+#                     continue
+#                 print('this video is not a yt shorts')
+#                 video_id = get_yt_id(video_link)
+
+#                 if is_video_in_file(video_id):
+#                     print('we already visited this video, lets continue with the next one')
+#                     continue  # we already visited this vid, sorry
+#                 else:
                     # write video to file
-                    print('video not visited, write to file')
-                    visited_links_path = './visited_links.txt'
-                    file_too_large_updater(visited_links_path)  # check if file got too large, to avoid filling up of memory
-                    with open(visited_links_path, 'a') as f:
-                        f.write(video_id + '\n')  # also puts a new line
-                        print("wrote video link to txt file")
+#                 print('video not visited, write to file')
+#                 visited_links_path = './visited_links.txt'
+#                 with open(visited_links_path, 'a') as f:
+#                     f.write(video_id + '\n')  # also puts a new line
+#                     print("wrote video link to txt file")
 
-                        
+
                 driver.switch_to.new_window('tab')
-                  #Now you can run this to open the gmailtag in a new tab
-#                 ActionChains(webdriver).key_down(Keys.CONTROL).click(cookie).perform()
-#                 script_text = "window.open('" + cookie_link + "', '_blank');"
-#                 driver.execute_script(script_text)
-                # switch to new window with switch_to.window()
-#                 driver.switch_to.window(driver.window_handles[1])
                 driver.get(video_link)
-    
-                # here you write to the text file of visited links
-                # also check if the link has already been visited
+                print('___opened video in new tab')
 
-#                 execute_script('''window.open("http://bings.com","_blank");''')
-#                 button = video.find_element(By.CSS_SELECTOR,
-#                                    '#meta') # clicks on video title
-#                 driver.execute_script("arguments[0].click();", button)
-                print('___clicked video')
-
-                # scroll down to comment section
-                #             wait.until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, 'body')))
-                #             driver.find_element_by_tag_name('body').send_keys(Keys.END)
 
                 sleep(2)  # wait a bit until the page fully loads
-
-                # check if it is a shorts video or not
 
 
                 if(find_comment_section() == False):
@@ -431,12 +438,26 @@ def post_comments(total_commentsl: int, comment: str, loop_length: int):
                     comments_counter += 1
                     driver.close()
                     driver.switch_to.window(main_video_list_window)
-            else:
-                print("this is not a video, it's a live or something else")
     if comments_counter != total_comments:
         print('comments counter is not reached, we are increasing loop length')
-        post_comments(total_comments - comments_counter, comment, loop_length + 5)  # we decrease the total comments count and increase the loop size
+        post_comments(total_comments - comments_counter, comment, loop_length + 5) 
 
+    
+
+
+
+
+
+
+# #     for video in videos:
+#     for i in range(0, len(videos)):
+
+        
+
+
+#         print(videos[i].get_attribute('innerHTML'))
+
+        
 
 # Step 03: accept terms and rights
 accept_conditions()
@@ -444,7 +465,7 @@ accept_conditions()
 sign_in()
 # Step 05: Search
 # wait for search button to appear, you need to tap yes on phone before this...
-search_youtube()
+search_youtube(search_phrase)
 search_page = select_filters()
 post_comments(total_comments, comment, 1)
 
