@@ -33,12 +33,10 @@ def read_password_file(filepath):
     except IOError:
         raise ValueError("Can't open password file for reading.")
 
-# from submodules.password_hashing import say_hi
+
 
 
 # # Step 01: Chrome Driver Setup
-
-# In[2]:
 
 
 driver = uc.Chrome(use_subprocess=True)
