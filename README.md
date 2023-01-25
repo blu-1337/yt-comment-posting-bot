@@ -2,7 +2,7 @@
 
 
 
-![alt text]([https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png](https://medianopol.ro/wp-content/uploads/2023/01/yt-comment-posting-bot-2048x1024.png) "YouTube Comment Posting Bot Banner")
+![alt text](https://medianopol.ro/wp-content/uploads/2023/01/yt-comment-posting-bot-2048x1024.png "YouTube Comment Posting Bot Banner")
 
 This is a Python Bot for YouTube that posts comments on the newest videos.
 
