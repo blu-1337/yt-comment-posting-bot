@@ -52,7 +52,13 @@ I recommend copying snippets of code from `automation.py` to `automation.ipnyb` 
 
 
 # Contents
-Here git 
+The contents of the application will be briefly described here.
+## fetched_videos.txt
+This file gets populated when the script runts and fetches videos from YouTube. After running this file is emptied.
+## visited_links.txt
+This file is populated with the unique (stripped) video ID's from YouTube. This ensures that videos are not visited more than once. This file is not deleted and will be constantly populated with video ID's. 
+## launch_main_python_file.bat
+Use this if you wish to use the Bot with Task Scheduler from Windows for example, to autoamte this script to run everyday or every couple of hours. If you intend to use it, please open it and adapt the path to your system.
 
 
 # To be fixed:
