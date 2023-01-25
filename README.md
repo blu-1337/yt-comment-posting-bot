@@ -51,6 +51,9 @@ I recommend copying snippets of code from `automation.py` to `automation.ipnyb` 
 
 
 
+# Contents
+Here git 
+
 
 # To be fixed:
 1. counter resets to 0 sometimes
