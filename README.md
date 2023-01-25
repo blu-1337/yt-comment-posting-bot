@@ -54,5 +54,5 @@ I recommend copying snippets of code from `automation.py` to `automation.ipnyb` 
 
 # To be fixed:
 1. counter resets to 0 sometimes
-2. if page takes too long to load the scrip quits
-3. task scheduler appears to not be runnig properly with script at 1 AM in the night
+2. if page takes too long to load the script quits
+3. task scheduler appears to not be runnig properly with script at 1 AM for example in the night
