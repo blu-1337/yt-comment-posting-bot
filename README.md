@@ -6,7 +6,18 @@
 
 This is a Python Bot for YouTube that posts comments on the newest videos.
 
-
+# Prerequisites
+1. YouTube account needs to have the two step verification off in order to automatically log in. If you do not disable this, you will always have to manually log in. If you choose to do this manually, you need to modify the `automation.py` script to pause and wait for you to input the password manually. If not, this is how you disable it as per Google 2023:
+```
+Turn off 2-Step Verification:
+1. On your Android phone or tablet, open your device's Settings app Google. Manage your Google Account.
+2. At the top, tap Security.
+3. Under "Signing in to Google," tap 2-Step Verification. You might need to sign in.
+4. Tap Turn off.
+5. Confirm by tapping Turn off.
+``` 
+2. Python 3
+3. Jupyter Notebooks (if you want to, but it's very nice to have)
 
 # Installation
 1. Clone the repository
